@@ -1,0 +1,401 @@
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Browser Compatibility Test</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      padding: 20px;
+      max-width: 800px;
+      margin: 0 auto;
+    }
+    .test-item {
+      margin: 15px 0;
+      padding: 10px;
+      border-radius: 5px;
+    }
+    .pass {
+      background-color: #d4edda;
+      border: 1px solid #c3e6cb;
+      color: #155724;
+    }
+    .fail {
+      background-color: #f8d7da;
+      border: 1px solid #f5c6cb;
+      color: #721c24;
+    }
+    h1 {
+      color: #333;
+    }
+    .test-name {
+      font-weight: bold;
+    }
+    .test-details {
+      margin-top: 5px;
+      font-size: 0.9em;
+    }
+    .warning-line {
+      color: #856404;
+      background-color: #fff3cd;
+      padding: 2px 4px;
+      border-radius: 3px;
+      display: inline-block;
+      margin: 1px 0;
+    }
+  </style>
+</head>
+<body>
+  <h1>Browser Compatibility Check</h1>
+  <div id="browser-info" style="padding: 15px; background-color: #e9ecef; border-radius: 5px; margin-bottom: 20px; font-size: 0.9em;"></div>
+  <div id="results"></div>
+
+  <script>
+    const results = [];
+
+    function addResult(testName, passed, details = '') {
+      results.push({ testName, passed, details });
+    }
+
+    // Display Browser Info
+    function displayBrowserInfo() {
+      const info = [];
+      info.push(`<strong>User Agent:</strong> ${navigator.userAgent}`);
+      info.push(`<strong>Platform:</strong> ${navigator.platform}`);
+      info.push(`<strong>Language:</strong> ${navigator.language}`);
+      info.push(`<strong>Online:</strong> ${navigator.onLine ? 'Yes' : 'No'}`);
+      info.push(`<strong>Cookies Enabled:</strong> ${navigator.cookieEnabled ? 'Yes' : 'No'}`);
+      info.push(`<strong>Screen Resolution:</strong> ${screen.width}x${screen.height}`);
+      info.push(`<strong>Viewport:</strong> ${window.innerWidth * window.devicePixelRatio}x${window.innerHeight * window.devicePixelRatio}`);
+      
+      const browserInfoDiv = document.getElementById('browser-info');
+      browserInfoDiv.innerHTML = `<h3 style="margin-top: 0;">Browser Information</h3>${info.join('<br>')}`;
+    }
+
+    displayBrowserInfo();
+
+    // WebGL Support Check
+    function checkWebGL() {
+      try {
+        const canvas = document.createElement('canvas');
+        const canvas2 = document.createElement('canvas');
+        const gl = canvas.getContext('webgl');
+        const gl2 = canvas2.getContext('webgl2');
+        
+        if (!gl && !gl2) {
+          addResult('WebGL', false, 'WebGL context not available');
+          return false;
+        }
+        
+        const details = [];
+        
+        if (gl && gl instanceof WebGLRenderingContext) {
+          const debugInfo = gl.getExtension('WEBGL_debug_renderer_info');
+          const renderer = debugInfo ? gl.getParameter(debugInfo.UNMASKED_RENDERER_WEBGL) : 'Unknown';
+          const loseContext = gl.getExtension('WEBGL_lose_context');
+          details.push('✓ WebGL 1.0');
+          details.push(`Renderer: ${renderer}`);
+          details.push(`${loseContext ? '✓' : '✗'} WEBGL_lose_context`);
+        } else {
+          details.push('✗ WebGL 1.0');
+        }
+        if (gl2 && gl2 instanceof WebGL2RenderingContext) {
+          details.push('✓ WebGL 2.0');
+        } else {
+          details.push('✗ WebGL 2.0');
+        }
+        
+        addResult('WebGL', true, details.join('<br>'));
+        return true;
+      } catch (e) {
+        addResult('WebGL', false, `Error: ${e.message}`);
+        return false;
+      }
+    }
+
+    // Service Worker Support Check
+    function checkServiceWorker() {
+      if ('serviceWorker' in navigator) {
+        addResult('Service Worker', true, 'Service Worker API is supported');
+        return true;
+      } else {
+        addResult('Service Worker', false, 'Service Worker API not supported');
+        return false;
+      }
+    }
+
+    // Array.prototype.at() Check
+    function checkArrayAt() {
+      try {
+        const arr = [1, 2, 3, 4, 5];
+        if (typeof arr.at === 'function') {
+          const lastItem = arr.at(-1);
+          if (lastItem === 5) {
+            addResult('Array.at()', true, 'at() method works correctly');
+            return true;
+          }
+        }
+      } catch (e) {
+        addResult('Array.at()', false, `Error: ${e.message}`);
+        return false;
+      }
+      addResult('Array.at()', false, 'at() method not available');
+      return false;
+    }
+
+    // Clipboard API Check
+    function checkClipboard() {
+      if (navigator.clipboard && typeof navigator.clipboard.writeText === 'function') {
+        const methods = [];
+        if (typeof navigator.clipboard.readText === 'function') methods.push('✓ readText');
+        else methods.push('✗ readText');
+        if (typeof navigator.clipboard.writeText === 'function') methods.push('✓ writeText');
+        else methods.push('✗ writeText');
+        if (typeof navigator.clipboard.read === 'function') methods.push('✓ read');
+        else methods.push('✗ read');
+        if (typeof navigator.clipboard.write === 'function') methods.push('✓ write');
+        else methods.push('✗ write');
+        addResult('Clipboard API', true, methods.join('<br>'));
+        return true;
+      } else {
+        addResult('Clipboard API', false, 'navigator.clipboard not available');
+        return false;
+      }
+    }
+
+    // WebAssembly Support Check
+    function checkWebAssembly() {
+      if (typeof WebAssembly === 'object' && typeof WebAssembly.instantiate === 'function') {
+        try {
+          // Test with a minimal valid WASM module (returns 42)
+          const wasmCode = new Uint8Array([
+            0,97,115,109,1,0,0,0,1,133,128,128,128,0,1,96,0,1,127,3,130,128,128,128,0,1,0,4,132,128,
+            128,128,0,1,112,0,0,5,131,128,128,128,0,1,0,1,6,129,128,128,128,0,0,7,145,128,128,128,0,
+            2,6,109,101,109,111,114,121,2,0,4,109,97,105,110,0,0,10,138,128,128,128,0,1,132,128,128,128,0,0,65,42,11
+          ]);
+          const wasmModule = new WebAssembly.Module(wasmCode);
+          const wasmInstance = new WebAssembly.Instance(wasmModule);
+          const result = wasmInstance.exports.main();
+          if (result === 42) {
+            addResult('WebAssembly', true, 'WASM instantiation and execution successful');
+            return true;
+          } else {
+            addResult('WebAssembly', false, 'WASM execution returned unexpected result');
+            return false;
+          }
+        } catch (e) {
+          addResult('WebAssembly', false, `Error: ${e.message}`);
+          return false;
+        }
+      } else {
+        addResult('WebAssembly', false, 'WebAssembly not supported');
+        return false;
+      }
+    }
+
+    // WebGPU Support Check
+    async function checkWebGPU() {
+      if ('gpu' in navigator) {
+        try {
+          const adapter = await navigator.gpu.requestAdapter();
+          if (adapter) {
+            const features = Array.from(adapter.features).slice(0, 5).join(', ');
+            const limits = `Max buffer size: ${adapter.limits.maxBufferSize}`;
+            const details = `<br>Features: ${features}...<br>${limits}`;
+            addResult('WebGPU', true, details);
+            return true;
+          } else {
+            addResult('WebGPU', false, 'No WebGPU adapter available');
+            return false;
+          }
+        } catch (e) {
+          addResult('WebGPU', false, `Error: ${e.message}`);
+          return false;
+        }
+      } else {
+        addResult('WebGPU', false, 'navigator.gpu not available');
+        return false;
+      }
+    }
+
+    // ES2022 Features Check
+    function checkES2022Features() {
+      const features = [];
+      let allPassed = true;
+
+      // 1. Top-level await
+      try {
+        eval('(async () => { await Promise.resolve(); })');
+        features.push('✓ Top-level await syntax');
+      } catch (e) {
+        features.push('✗ Top-level await syntax');
+        allPassed = false;
+      }
+
+      // 2. Class fields (public and private)
+      try {
+        eval('class Test { publicField = 1; #privateField = 2; }');
+        features.push('✓ Class fields (public & private)');
+      } catch (e) {
+        features.push('✗ Class fields (public & private)');
+        allPassed = false;
+      }
+
+      // 3. Static class fields and private static methods
+      try {
+        eval('class Test { static staticField = 1; static #privateStatic = 2; static #method() {} }');
+        features.push('✓ Static class fields & private static methods');
+      } catch (e) {
+        features.push('✗ Static class fields & private static methods');
+        allPassed = false;
+      }
+
+      // 4. Private methods and accessors
+      try {
+        eval('class Test { #privateMethod() {} get #privateGetter() { return 1; } }');
+        features.push('✓ Private methods & accessors');
+      } catch (e) {
+        features.push('✗ Private methods & accessors');
+        allPassed = false;
+      }
+
+      // 5. Static initialization blocks
+      try {
+        eval('class Test { static { this.value = 42; } }');
+        features.push('✓ Static initialization blocks');
+      } catch (e) {
+        features.push('✗ Static initialization blocks');
+        allPassed = false;
+      }
+
+      // 6. RegExp match indices
+      try {
+        const regex = /a/d;
+        const match = 'abc'.match(regex);
+        if (match && match.indices) {
+          features.push('✓ RegExp match indices (/d flag)');
+        } else {
+          features.push('✗ RegExp match indices (/d flag)');
+          allPassed = false;
+        }
+      } catch (e) {
+        features.push('✗ RegExp match indices (/d flag)');
+        allPassed = false;
+      }
+
+      // 7. Error cause
+      try {
+        const err = new Error('message', { cause: 'root cause' });
+        if (err.cause === 'root cause') {
+          features.push('✓ Error cause');
+        } else {
+          features.push('✗ Error cause');
+          allPassed = false;
+        }
+      } catch (e) {
+        features.push('✗ Error cause');
+        allPassed = false;
+      }
+
+      // 8. Object.hasOwn()
+      try {
+        if (typeof Object.hasOwn === 'function') {
+          const obj = { prop: 1 };
+          if (Object.hasOwn(obj, 'prop') === true) {
+            features.push('✓ Object.hasOwn()');
+          } else {
+            features.push('✗ Object.hasOwn()');
+            allPassed = false;
+          }
+        } else {
+          features.push('✗ Object.hasOwn()');
+          allPassed = false;
+        }
+      } catch (e) {
+        features.push('✗ Object.hasOwn()');
+        allPassed = false;
+      }
+
+      addResult('ES2022 Features', allPassed, features.join('<br>'));
+      return allPassed;
+    }
+
+    // Check if logic-arrows.io is available
+    async function checkLogicArrowsIO() {
+      try {
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 5000); // 5 second timeout
+        
+        const response = await fetch('https://logic-arrows.io', {
+          method: 'HEAD',
+          mode: 'no-cors',
+          signal: controller.signal
+        });
+        
+        clearTimeout(timeoutId);
+        addResult('logic-arrows.io', true, 'Site is reachable');
+        return true;
+      } catch (e) {
+        if (e.name === 'AbortError') {
+          addResult('logic-arrows.io', false, 'Request timed out (5s)');
+        } else {
+          addResult('logic-arrows.io', false, `Error: ${e.message}`);
+        }
+        return false;
+      }
+    }
+
+    // Run all tests
+    async function runAllTests() {
+      checkWebGL();
+      await checkLogicArrowsIO();
+      checkArrayAt();
+      checkClipboard();
+      checkES2022Features();
+      checkServiceWorker();
+      checkWebAssembly();
+      await checkWebGPU();
+      displayResults();
+    }
+
+    function displayResults() {
+
+      const resultsDiv = document.getElementById('results');
+      results.forEach(result => {
+        const div = document.createElement('div');
+        div.className = `test-item ${result.passed ? 'pass' : 'fail'}`;
+        
+        let detailsHtml = result.details;
+        if (result.passed && result.details && result.details.includes('✗')) {
+          // Wrap lines containing ✗ in warning styling
+          detailsHtml = result.details.split('<br>').map(line => {
+            if (line.includes('✗')) {
+              return `<span class="warning-line">${line}</span>`;
+            }
+            return line;
+          }).join('<br>');
+        }
+        
+        div.innerHTML = `
+          <div class="test-name">${result.testName}: ${result.passed ? 'PASS ✓' : 'FAIL ✗'}</div>
+          ${detailsHtml ? `<div class="test-details">${detailsHtml}</div>` : ''}
+        `;
+        resultsDiv.appendChild(div);
+      });
+
+      // Overall summary
+      const totalTests = results.length;
+      const passedTests = results.filter(r => r.passed).length;
+      const summaryDiv = document.createElement('div');
+      summaryDiv.style.marginTop = '20px';
+      summaryDiv.style.padding = '15px';
+      summaryDiv.style.backgroundColor = passedTests === totalTests ? '#d4edda' : '#fff3cd';
+      summaryDiv.style.border = '2px solid ' + (passedTests === totalTests ? '#c3e6cb' : '#ffc107');
+      summaryDiv.style.borderRadius = '5px';
+      summaryDiv.innerHTML = `<strong>Summary: ${passedTests}/${totalTests} tests passed</strong>`;
+      resultsDiv.appendChild(summaryDiv);
+    }
+
+    runAllTests();
+  </script>
+</body>
+</html>
